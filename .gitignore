@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Flask
+instance/
+.webassets-cache
+
+# HLS Output (generated files)
+static/hls/*.ts
+static/hls/*.m3u8
+static/hls/*.tmp
+
+# Uploaded videos (optional - uncomment if you don't want to track videos)
+# videos/*.mp4
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Backups
+*.backup
+*.bak
