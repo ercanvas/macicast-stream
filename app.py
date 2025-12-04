@@ -14,7 +14,10 @@ import psutil
 
 from state_manager import StateManager, SegmentTracker
 from trash_manager import TrashBinManager
+from trash_manager import TrashBinManager
 from overlay_manager import OverlayManager
+from content_provider import ContentProvider
+
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -33,7 +36,10 @@ os.makedirs(config.OVERLAYS_DIR, exist_ok=True)
 state_manager = StateManager()
 segment_tracker = SegmentTracker(config.SEGMENT_METADATA_FILE)
 trash_manager = TrashBinManager(config.HLS_DIR, config.TRASH_DIR, segment_tracker)
+trash_manager = TrashBinManager(config.HLS_DIR, config.TRASH_DIR, segment_tracker)
 overlay_manager = OverlayManager()
+content_provider = ContentProvider()
+
 
 # --- Global Variables ---
 stop_event = threading.Event()
@@ -83,6 +89,15 @@ def start_ffmpeg(source, source_type):
                 '-f', 'lavfi', '-i', 'smptebars=size=1280x720:rate=30',
                 '-f', 'lavfi', '-i', 'sine=frequency=440'
             ])
+    elif source_type == 'URL':
+        # Remote URL (YouTube stream, etc.)
+        # Add reconnect flags for stability
+        cmd.extend([
+            '-reconnect', '1',
+            '-reconnect_streamed', '1',
+            '-reconnect_delay_max', '5',
+            '-i', source
+        ])
     else:
         # QUEUE (Standard File)
         cmd.extend(['-i', source])
@@ -280,9 +295,31 @@ def stream_manager_loop():
             next_file = state_manager.pop_from_queue()
             file_path = os.path.join(config.UPLOAD_FOLDER, next_file)
             if os.path.exists(file_path):
+                # If coming from auto mode, we might want to reset program name or keep it?
+                # Usually queue items have their own logic, but for now let's reset if needed.
+                # Or just let the user set it manually for queue items.
                 start_ffmpeg(file_path, 'QUEUE')
             else:
                 print(f"File missing: {next_file}")
+        
+        elif state_manager.is_auto_mode():
+            # Auto Mode: Fetch from YouTube
+            hashtag = state_manager.get_current_hashtag()
+            print(f"Auto Mode: Fetching video for '{hashtag}'...")
+            
+            url, title = content_provider.get_random_video(hashtag)
+            
+            if url:
+                print(f"Auto Mode: Starting {title}")
+                # Update program name to video title
+                state_manager.set_program_name(title)
+                start_ffmpeg(url, 'URL')
+            else:
+                print("Auto Mode: Failed to fetch video, falling back to IDLE momentarily...")
+                start_ffmpeg(config.IDLE_SOURCE_PATH, 'IDLE')
+                # Sleep a bit longer to avoid rapid retry loops if API is down
+                time.sleep(5)
+                
         else:
             # Queue empty -> Play IDLE
             start_ffmpeg(config.IDLE_SOURCE_PATH, 'IDLE')
@@ -565,6 +602,39 @@ def toggle_overlay():
         'logo_enabled': config.LOGO_ENABLED,
         'banner_enabled': config.BANNER_ENABLED
     })
+
+# --- Auto Mode Endpoints ---
+
+@app.route('/api/automode/start', methods=['POST'])
+def start_auto_mode():
+    data = request.json or {}
+    hashtag = data.get('hashtag')
+    
+    if hashtag:
+        state_manager.set_current_hashtag(hashtag)
+    
+    state_manager.set_auto_mode(True)
+    
+    # If currently IDLE, we can stop it to trigger auto mode immediately
+    playback = state_manager.get_current_playback()
+    if playback['source_type'] == 'IDLE':
+        stop_ffmpeg()
+        
+    return jsonify({'success': True, 'hashtag': state_manager.get_current_hashtag()})
+
+@app.route('/api/automode/stop', methods=['POST'])
+def stop_auto_mode():
+    state_manager.set_auto_mode(False)
+    return jsonify({'success': True})
+
+@app.route('/api/automode/set_hashtag', methods=['POST'])
+def set_auto_hashtag():
+    data = request.json
+    hashtag = data.get('hashtag')
+    if hashtag:
+        state_manager.set_current_hashtag(hashtag)
+        return jsonify({'success': True, 'hashtag': hashtag})
+    return jsonify({'error': 'No hashtag provided'}), 400
 
 # --- Cleanup on Exit ---
 

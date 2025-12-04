@@ -112,8 +112,13 @@ STREAM_HEIGHT = 720
 PROGRAM_NAME_ENABLED = True
 FONT_PATH = "arial.ttf"  # FFmpeg usually finds this on Windows, or provide full path C:/Windows/Fonts/arial.ttf
 FONT_SIZE = 24
-FONT_COLOR = "black"
-BOX_COLOR = "white@1.0"
+FONT_COLOR = "white"
+BOX_COLOR = "black@0.0"
 BOX_BORDER_WIDTH = 5
 PROGRAM_NAME_X = "w-tw-10"  # Top-right (w = width, tw = text width)
 PROGRAM_NAME_Y = "10"       # 10px from top
+
+# --- TikTok Automation Configuration ---
+AUTO_MODE_ENABLED = False
+TIKTOK_HASHTAGS = ["funny", "dance", "comedy", "trending"]
+

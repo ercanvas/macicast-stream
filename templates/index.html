@@ -4,9 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Playout Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>Streaming Server</title>
     <style>
         * {
             margin: 0;
@@ -15,1042 +13,267 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            color: #ffffff;
-            overflow: hidden;
-            height: 100vh;
-        }
-
-        .fullscreen-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .system-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.offline {
-            background: #6c757d;
-            animation: none;
-        }
-
-        .status-dot.online {
-            background: #28a745;
-        }
-
-        .status-dot.live {
-            background: #dc3545;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.5;
-            }
-        }
-
-        /* Main Content */
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 20px;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* Video Scene */
-        .video-scene {
-            background: #000;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .video-scene video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .video-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
+            color: #fff;
             padding: 20px;
-            background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 32px;
+        }
+
+        .status {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .status-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-        }
-
-        .source-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .source-badge.offline {
-            background: rgba(108, 117, 125, 0.9);
-        }
-
-        .source-badge.queue {
-            background: rgba(40, 167, 69, 0.9);
-        }
-
-        .source-badge.live {
-            background: rgba(220, 53, 69, 0.9);
-            animation: pulse 2s infinite;
-        }
-
-        .source-badge.idle {
-            background: rgba(255, 193, 7, 0.9);
-            color: #000;
-        }
-
-        .playing-info {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 20px;
-            background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        /* Control Panel */
-        .control-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            overflow-y: auto;
-        }
-
-        .control-section {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .section-title {
+            margin: 10px 0;
             font-size: 14px;
+        }
+
+        .label {
+            opacity: 0.7;
+        }
+
+        .value {
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
-            color: #a0a0a0;
         }
 
-        /* Stream Link */
-        .stream-link-box {
+        .controls {
             background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        input[type="text"] {
+            width: 100%;
             padding: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .stream-link-box input {
-            flex: 1;
-            background: transparent;
-            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
             color: #fff;
-            font-size: 12px;
-            font-family: 'Courier New', monospace;
-            outline: none;
+            font-size: 14px;
         }
 
-        .copy-btn {
-            background: rgba(102, 126, 234, 0.2);
-            border: 1px solid #667eea;
-            color: #667eea;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 11px;
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 14px;
+            transition: all 0.3s;
         }
 
-        .copy-btn:hover {
+        .btn-start {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .btn-stop {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .btn-update {
             background: #667eea;
             color: #fff;
         }
 
-        /* Action Buttons */
-        .toggle-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .action-btn.start {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: #fff;
-        }
-
-        .action-btn.start:hover:not(:disabled) {
+        button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
-        .action-btn.stop {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-            color: #fff;
-        }
-
-        .action-btn.stop:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(108, 117, 125, 0.4);
-        }
-
-        .action-btn.live {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: #fff;
-        }
-
-        .action-btn.live:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(220, 53, 69, 0.4);
-        }
-
-        .action-btn.end-live {
-            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-            color: #000;
-        }
-
-        .action-btn.end-live:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(255, 193, 7, 0.4);
-        }
-
-        .action-btn:disabled {
+        button:disabled {
             opacity: 0.4;
             cursor: not-allowed;
+            transform: none;
         }
 
-        /* Queue */
-        .queue-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .queue-item {
+        .links {
             background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-
-        .queue-empty {
-            text-align: center;
-            color: #6c757d;
             padding: 20px;
+            border-radius: 12px;
+        }
+
+        .link-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
             font-size: 13px;
         }
 
-        /* Upload */
-        .upload-area {
-            border: 2px dashed rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .upload-area:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .upload-area input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
-
-        .upload-btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        .upload-status {
-            margin-top: 10px;
-            font-size: 12px;
-            color: #28a745;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Username Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-box {
-            background: #1a1a1a;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transform: translateY(20px);
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.active .modal-box {
-            transform: translateY(0);
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .modal-desc {
-            font-size: 13px;
-            color: #a0a0a0;
-            margin-bottom: 20px;
-        }
-
-        .modal-input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 16px;
-            margin-bottom: 20px;
-            outline: none;
-            text-align: center;
-        }
-
-        .modal-input:focus {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .modal-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: transform 0.2s;
-        }
-
-        .modal-btn:hover {
-            transform: scale(1.02);
+        .link-url {
+            color: #ffd700;
+            word-break: break-all;
+            font-family: monospace;
         }
     </style>
 </head>
 
 <body>
-    <div class="fullscreen-container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📺 TV Playout Control</h1>
-            <div class="system-status">
-                <div class="status-dot offline" id="status-dot"></div>
-                <span id="system-status">SYSTEM OFF</span>
+    <div class="container">
+        <h1>📺 Streaming Server</h1>
+
+        <!-- Status -->
+        <div class="status">
+            <div class="status-row">
+                <span class="label">Status:</span>
+                <span class="value" id="broadcast-status">Stopped</span>
+            </div>
+            <div class="status-row">
+                <span class="label">Auto Mode:</span>
+                <span class="value" id="auto-status">Disabled</span>
+            </div>
+            <div class="status-row">
+                <span class="label">Current Search:</span>
+                <span class="value" id="current-search">-</span>
+            </div>
+            <div class="status-row">
+                <span class="label">Now Playing:</span>
+                <span class="value" id="now-playing">-</span>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Video Scene -->
-            <div class="video-scene">
-                <video id="video" autoplay></video>
-                <div class="video-overlay">
-                    <div class="source-badge offline" id="source-badge">OFFLINE</div>
-                </div>
-                <div class="playing-info" id="playing-info">System Stopped</div>
+        <!-- Controls -->
+        <div class="controls">
+            <h3 style="margin-bottom: 15px;">Controls</h3>
+
+            <div class="input-group">
+                <label>YouTube Search Term</label>
+                <input type="text" id="searchInput" placeholder="e.g., funny cats, music, dances">
             </div>
 
-            <!-- Control Panel -->
-            <div class="control-panel">
-                <!-- Stream Link -->
-                <div class="control-section">
-                    <div class="section-title">Stream URL</div>
-                    
-            <div class="stream-link-box" style="margin-bottom: 10px;">
-                <span class="status-dot"></span>
-                <input type="text" value="http://localhost:5000/static/hls/stream.m3u8" readonly id="hlsLinkInput">
-                <button class="copy-btn" onclick="copyLink('hlsLinkInput')">COPY HLS</button>
+            <div class="btn-group">
+                <button class="btn-start" onclick="startBroadcast()">▶ Start Broadcast</button>
+                <button class="btn-stop" onclick="stopBroadcast()">⏹ Stop Broadcast</button>
+                <button class="btn-update" onclick="updateSearch()">🔄 Update Search</button>
+                <button class="btn-start" onclick="startAutoMode()">🤖 Start Auto Mode</button>
             </div>
-            <div class="stream-link-box">
-                <span class="status-dot" style="background: #e91e63;"></span>
-                <input type="text" value="http://localhost:5000/live/user/playlist.m3u" readonly id="iptvLinkInput">
-                <button class="copy-btn" onclick="copyLink('iptvLinkInput')">COPY IPTV</button>
+        </div>
+
+        <!-- Stream Links -->
+        <div class="links">
+            <h3 style="margin-bottom: 15px;">Stream Links</h3>
+            <div class="link-item">
+                <div style="margin-bottom: 5px;">M3U Playlist (for IPTV/VLC):</div>
+                <div class="link-url">http://localhost:5000/live/user/playlist.m3u</div>
             </div>
-
-                </div>
-
-                <!-- Broadcast Controls -->
-                <div class="control-section">
-                    <div class="section-title">Broadcast Controls</div>
-                    <div class="toggle-group">
-                        <button class="action-btn start" id="btn-start" onclick="sendControl('/start_broadcast')">
-                            ▶ Start
-                        </button>
-                        <button class="action-btn stop" id="btn-stop" onclick="sendControl('/stop_broadcast')">
-                            ⏹ Stop
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Live Controls -->
-                <div class="control-section">
-                    <div class="section-title">Live Camera</div>
-                    <div class="toggle-group">
-                        <button class="action-btn live" id="btn-go-live" onclick="sendControl('/go_live_stream')">
-                            🔴 Go Live
-                        </button>
-                        <button class="action-btn end-live" id="btn-end-live" onclick="sendControl('/end_live_stream')">
-                            End Live
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Upload -->
-                <div class="control-section">
-                    <div class="section-title">Upload Video</div>
-                    <form id="upload-form" class="upload-area">
-                        <input type="file" id="fileInput" accept=".mp4" required>
-                        <button type="submit" class="upload-btn">ADD TO QUEUE</button>
-                        <div id="upload-status" class="upload-status"></div>
-                    </form>
-                </div>
-
-
-                
-                <!-- Program Info -->
-                <div class="control-section">
-                    <div class="section-title">📺 Program Info</div>
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 8px;">
-                            Program Name (Top-Right Overlay)
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="programNameInput" placeholder="Enter program name..." 
-                                   style="flex: 1; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-size: 12px;">
-                            <button onclick="updateProgramName()" class="upload-btn" style="padding: 8px 16px; width: auto;">UPDATE</button>
-                        </div>
-                        <div id="program-status" style="font-size: 11px; margin-top: 5px; height: 15px;"></div>
-                    </div>
-                </div>
-
-
-<!-- Overlay Controls -->
-                <div class="control-section">
-                    <div class="section-title">🎨 Logo & Banner Overlays</div>
-                    
-                    <!-- Logo Upload -->
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #a0a0a0;">
-                            📍 LOGO (Top-Left)
-                        </div>
-                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 8px;">
-                            Recommended: 200x100px | Max: 5MB | PNG/JPG
-                        </div>
-                        <form id="logo-upload-form" style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="file" id="logoInput" accept=".png,.jpg,.jpeg" 
-                                   style="flex: 1; font-size: 11px; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
-                            <button type="submit" class="upload-btn" style="padding: 8px 16px; font-size: 11px; width: auto;">UPLOAD</button>
-                        </form>
-                        <div id="logo-status" style="font-size: 11px; margin-top: 5px;"></div>
-                    </div>
-
-                    <!-- Banner Upload -->
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #a0a0a0;">
-                            📊 BANNER (Bottom)
-                        </div>
-                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 8px;">
-                            Recommended: 1280x150px | Max: 10MB | PNG/JPG
-                        </div>
-                        <form id="banner-upload-form" style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="file" id="bannerInput" accept=".png,.jpg,.jpeg" 
-                                   style="flex: 1; font-size: 11px; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
-                            <button type="submit" class="upload-btn" style="padding: 8px 16px; font-size: 11px; width: auto;">UPLOAD</button>
-                        </form>
-                        <div id="banner-status" style="font-size: 11px; margin-top: 5px;"></div>
-                    </div>
-
-                    <!-- Overlay Status -->
-                    <div id="overlay-info" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; font-size: 11px;">
-                        <div style="color: #a0a0a0;">Loading overlay status...</div>
-                    </div>
-                </div>
-
-                <!-- Queue -->
-                <div class="control-section">
-                    <div class="section-title">Playlist Queue</div>
-                    <div class="queue-list" id="queue-list">
-                        <div class="queue-empty">No videos in queue</div>
-                    </div>
-                </div>
+            <div class="link-item">
+                <div style="margin-bottom: 5px;">HLS Stream:</div>
+                <div class="link-url">http://localhost:5000/static/hls/stream.m3u8</div>
             </div>
         </div>
     </div>
 
     <script>
-        // HLS Video Player
-        const video = document.getElementById('video');
-        const streamUrl = 'http://127.0.0.1:5000/static/hls/stream.m3u8';
-        let hls;
-
-        if (Hls.isSupported()) {
-            hls = new Hls({
-                debug: false,
-                enableWorker: true,
-                lowLatencyMode: true,
-                backBufferLength: 90,
-                maxBufferLength: 30,
-                maxMaxBufferLength: 600,
-                manifestLoadingTimeOut: 10000,
-                manifestLoadingMaxRetry: 4,
-                manifestLoadingRetryDelay: 1000,
-                levelLoadingTimeOut: 10000,
-                levelLoadingMaxRetry: 4,
-                fragLoadingTimeOut: 20000,
-                fragLoadingMaxRetry: 6,
-                fragLoadingRetryDelay: 1000
-            });
-
-            hls.loadSource(streamUrl);
-            hls.attachMedia(video);
-
-            hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                console.log('✅ HLS manifest parsed, starting playback...');
-                video.play().catch(e => console.log('⚠️ Autoplay prevented:', e));
-            });
-
-            hls.on(Hls.Events.ERROR, function (event, data) {
-                console.log('❌ HLS Error:', data.type, data.details);
-                if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.log('🔄 Network error, trying to recover...');
-                            hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.log('🔄 Media error, trying to recover...');
-                            hls.recoverMediaError();
-                            break;
-                        default:
-                            console.log('💥 Fatal error, destroying and recreating player...');
-                            hls.destroy();
-                            setTimeout(() => location.reload(), 2000);
-                            break;
-                    }
-                }
-            });
-
-            hls.on(Hls.Events.FRAG_LOADED, function (event, data) {
-                console.log('📦 Fragment loaded:', data.frag.sn);
-            });
-
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = streamUrl;
-            video.addEventListener('loadedmetadata', function () {
-                video.play();
-            });
+        function startBroadcast() {
+            fetch('/start_broadcast', { method: 'POST' })
+                .then(r => r.json())
+                .then(() => updateStatus());
         }
 
-        // Copy Stream URL
-        function copyStreamUrl() {
-            const input = document.getElementById('stream-url');
-            input.select();
-            document.execCommand('copy');
-            const btn = event.target;
-            btn.textContent = 'COPIED!';
-            setTimeout(() => btn.textContent = 'COPY', 2000);
+        function stopBroadcast() {
+            fetch('/stop_broadcast', { method: 'POST' })
+                .then(r => r.json())
+                .then(() => updateStatus());
         }
 
-        // Send Control Commands
-        function sendControl(endpoint) {
-            fetch(endpoint, { method: 'POST' })
-                .then(response => response.json())
-                .then(data => updateStatus());
+        function updateSearch() {
+            const search = document.getElementById('searchInput').value;
+            if (!search) return alert('Please enter a search term');
+
+            fetch('/api/automode/set_hashtag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hashtag: search })
+            })
+                .then(r => r.json())
+                .then(() => updateStatus());
         }
 
-        // Status Polling
-        let lastSourceType = null;
+        function startAutoMode() {
+            const search = document.getElementById('searchInput').value || 'funny cats';
+
+            fetch('/api/automode/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hashtag: search })
+            })
+                .then(r => r.json())
+                .then(() => updateStatus());
+        }
 
         function updateStatus() {
-            fetch('/status')
-                .then(response => response.json())
+            fetch('/api/state')
+                .then(r => r.json())
                 .then(data => {
-                    // Update Queue
-                    const queueList = document.getElementById('queue-list');
-                    queueList.innerHTML = '';
-                    if (data.queue.length === 0) {
-                        queueList.innerHTML = '<div class="queue-empty">No videos in queue</div>';
-                    } else {
-                        data.queue.forEach((item, index) => {
-                            queueList.innerHTML += `<div class="queue-item">${index + 1}. ${item}</div>`;
-                        });
+                    document.getElementById('broadcast-status').textContent =
+                        data.is_broadcasting ? '🟢 Broadcasting' : '🔴 Stopped';
+
+                    document.getElementById('auto-status').textContent =
+                        data.auto_mode_enabled ? `🟢 Active` : '🔴 Disabled';
+
+                    document.getElementById('current-search').textContent =
+                        data.current_hashtag || '-';
+
+                    document.getElementById('now-playing').textContent =
+                        data.program_name || data.current_playback.playing_file || '-';
+
+                    if (data.current_hashtag && !document.getElementById('searchInput').value) {
+                        document.getElementById('searchInput').value = data.current_hashtag;
                     }
-
-                    // Detect source change and reload stream
-                    if (data.current_source && data.current_source !== lastSourceType) {
-                        console.log(`📺 Source changed: ${lastSourceType} → ${data.current_source}`);
-                        lastSourceType = data.current_source;
-
-                        if (data.is_broadcasting && hls) {
-                            setTimeout(() => {
-                                console.log('🔄 Reloading HLS stream...');
-                                hls.loadSource(streamUrl);
-
-                                // Force playback after reload
-                                setTimeout(() => {
-                                    if (video.paused) {
-                                        console.log('▶️ Force starting playback...');
-                                        video.play().catch(e => console.log('Play failed:', e));
-                                    }
-                                }, 500);
-                            }, 1000);
-                        }
-                    }
-
-                    // Periodic check: ensure video is playing
-                    if (data.is_broadcasting && video.paused && video.readyState >= 2) {
-                        console.log('⚠️ Video paused but should be playing. Starting...');
-                        video.play().catch(e => console.log('Auto-play failed:', e));
-                    }
-
-                    // Update System Status
-                    const statusDot = document.getElementById('status-dot');
-                    const sysStatus = document.getElementById('system-status');
-                    const sourceBadge = document.getElementById('source-badge');
-                    const playingInfo = document.getElementById('playing-info');
-
-                    if (!data.is_broadcasting) {
-                        statusDot.className = 'status-dot offline';
-                        sysStatus.textContent = 'SYSTEM OFF';
-                        sourceBadge.className = 'source-badge offline';
-                        sourceBadge.textContent = 'OFFLINE';
-                        playingInfo.textContent = 'System Stopped';
-                        lastSourceType = null;
-                    } else if (data.is_live_camera_mode) {
-                        statusDot.className = 'status-dot live';
-                        sysStatus.textContent = 'LIVE';
-                        sourceBadge.className = 'source-badge live';
-                        sourceBadge.textContent = '🔴 LIVE CAMERA';
-                        playingInfo.textContent = 'Broadcasting Live Camera';
-                    } else {
-                        statusDot.className = 'status-dot online';
-                        sysStatus.textContent = 'SYSTEM ONLINE';
-
-                        if (data.current_source === 'IDLE') {
-                            sourceBadge.className = 'source-badge idle';
-                            sourceBadge.textContent = 'IDLE LOOP';
-                            playingInfo.textContent = '💤 Idle Stream (Waiting for videos...)';
-                        } else if (data.current_source === 'QUEUE') {
-                            sourceBadge.className = 'source-badge queue';
-                            sourceBadge.textContent = 'PLAYING QUEUE';
-                            const filename = data.playing_file ? data.playing_file.split('\\').pop().split('/').pop() : 'Unknown';
-                            playingInfo.textContent = '▶ ' + filename;
-                        } else {
-                            sourceBadge.className = 'source-badge offline';
-                            sourceBadge.textContent = 'BUFFERING';
-                            playingInfo.textContent = 'Loading...';
-                        }
-                    }
-
-                    // Button States
-                    const btnStart = document.getElementById('btn-start');
-                    const btnStop = document.getElementById('btn-stop');
-                    const btnGoLive = document.getElementById('btn-go-live');
-                    const btnEndLive = document.getElementById('btn-end-live');
-
-                    btnStart.disabled = data.is_broadcasting;
-                    btnStop.disabled = !data.is_broadcasting;
-                    btnGoLive.disabled = !data.is_broadcasting || data.is_live_camera_mode;
-                    btnEndLive.disabled = !data.is_broadcasting || !data.is_live_camera_mode;
                 });
         }
 
-        setInterval(updateStatus, 1000);
+        // Update status every 2 seconds
+        setInterval(updateStatus, 2000);
         updateStatus();
-
-        // Upload Handling
-        document.getElementById('upload-form').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
-            if (!file) return;
-            const formData = new FormData();
-            formData.append('file', file);
-            const statusDiv = document.getElementById('upload-status');
-            statusDiv.textContent = "Uploading...";
-            statusDiv.style.color = "#ffc107";
-            fetch('/upload', { method: 'POST', body: formData })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        statusDiv.textContent = "✓ Upload Successful!";
-                        statusDiv.style.color = "#28a745";
-                        fileInput.value = '';
-                        updateStatus();
-                        setTimeout(() => statusDiv.textContent = '', 3000);
-                    } else {
-                        statusDiv.textContent = "✗ Error: " + data.error;
-                        statusDiv.style.color = "#dc3545";
-                    }
-                })
-                .catch(err => {
-                    statusDiv.textContent = "✗ Upload Failed";
-                    statusDiv.style.color = "#dc3545";
-                });
-        });
-
-        // Overlay Upload Handling
-        document.getElementById('logo-upload-form').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('logoInput');
-            const file = fileInput.files[0];
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            const statusDiv = document.getElementById('logo-status');
-            
-            statusDiv.textContent = "Uploading logo...";
-            statusDiv.style.color = "#ffc107";
-            
-            fetch('/upload_logo', { method: 'POST', body: formData })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        statusDiv.textContent = `✓ ${data.message} (${data.info.width}x${data.info.height})`;
-                        statusDiv.style.color = "#28a745";
-                        fileInput.value = '';
-                        updateOverlayStatus();
-                        setTimeout(() => statusDiv.textContent = '', 5000);
-                    } else {
-                        statusDiv.textContent = `✗ ${data.error}`;
-                        statusDiv.style.color = "#dc3545";
-                    }
-                })
-                .catch(err => {
-                    statusDiv.textContent = "✗ Upload Failed";
-                    statusDiv.style.color = "#dc3545";
-                });
-        });
-
-        document.getElementById('banner-upload-form').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('bannerInput');
-            const file = fileInput.files[0];
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            const statusDiv = document.getElementById('banner-status');
-            
-            statusDiv.textContent = "Uploading banner...";
-            statusDiv.style.color = "#ffc107";
-            
-            fetch('/upload_banner', { method: 'POST', body: formData })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        statusDiv.textContent = `✓ ${data.message} (${data.info.width}x${data.info.height})`;
-                        statusDiv.style.color = "#28a745";
-                        fileInput.value = '';
-                        updateOverlayStatus();
-                        setTimeout(() => statusDiv.textContent = '', 5000);
-                    } else {
-                        statusDiv.textContent = `✗ ${data.error}`;
-                        statusDiv.style.color = "#dc3545";
-                    }
-                })
-                .catch(err => {
-                    statusDiv.textContent = "✗ Upload Failed";
-                    statusDiv.style.color = "#dc3545";
-                });
-        });
-
-        // Update Overlay Status
-        function updateOverlayStatus() {
-            fetch('/overlay_status')
-                .then(response => response.json())
-                .then(data => {
-                    const infoDiv = document.getElementById('overlay-info');
-                    let html = '';
-                    
-                    if (data.logo.exists) {
-                        html += `<div style="margin-bottom: 8px;">
-                            <span style="color: #28a745;">✓</span> Logo: ${data.logo.width}x${data.logo.height} (${data.logo.size_mb}MB)
-                        </div>`;
-                    } else {
-                        html += `<div style="margin-bottom: 8px; color: #6c757d;">○ Logo: Not uploaded</div>`;
-                    }
-                    
-                    if (data.banner.exists) {
-                        html += `<div>
-                            <span style="color: #28a745;">✓</span> Banner: ${data.banner.width}x${data.banner.height} (${data.banner.size_mb}MB)
-                        </div>`;
-                    } else {
-                        html += `<div style="color: #6c757d;">○ Banner: Not uploaded</div>`;
-                    }
-                    
-                    infoDiv.innerHTML = html;
-                })
-                .catch(err => {
-                    console.error('Error fetching overlay status:', err);
-                });
-        }
-
-        // Update overlay status periodically
-        setInterval(updateOverlayStatus, 5000);
-        updateOverlayStatus();
-
-
-        // Program Name Handling
-        function updateProgramName() {
-            const name = document.getElementById('programNameInput').value;
-            const statusDiv = document.getElementById('program-status');
-            
-            statusDiv.textContent = "Updating...";
-            statusDiv.style.color = "#ffc107";
-            
-            fetch('/set_program_name', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ program_name: name })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    statusDiv.textContent = "✓ Updated (Restart stream to apply)";
-                    statusDiv.style.color = "#28a745";
-                    setTimeout(() => statusDiv.textContent = '', 5000);
-                } else {
-                    statusDiv.textContent = "✗ Failed";
-                    statusDiv.style.color = "#dc3545";
-                }
-            })
-            .catch(err => {
-                statusDiv.textContent = "✗ Error";
-                statusDiv.style.color = "#dc3545";
-            });
-        }
-
-        // Username Handling
-        const usernameModal = document.getElementById('usernameModal');
-        const usernameInput = document.getElementById('usernameInput');
-        const streamLinkInput = document.querySelector('.stream-link-box input');
-
-        function checkUsername() {
-            const username = localStorage.getItem('sinlive_username');
-            if (!username) {
-                usernameModal.classList.add('active');
-                usernameInput.focus();
-            } else {
-                updateStreamLink(username);
-            }
-        }
-
-        function saveUsername() {
-            const username = usernameInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-            
-            if (username.length < 3) {
-                alert('Username must be at least 3 characters long.');
-                return;
-            }
-
-            localStorage.setItem('sinlive_username', username);
-            usernameModal.classList.remove('active');
-            updateStreamLink(username);
-        }
-
-        
-        function updateStreamLink(username) {
-            const protocol = window.location.protocol;
-            const host = window.location.host;
-            
-            const hlsLink = `${protocol}//${host}/live/${username}/stream.m3u8`;
-            const iptvLink = `${protocol}//${host}/live/${username}/playlist.m3u`;
-            
-            const hlsInput = document.getElementById('hlsLinkInput');
-            const iptvInput = document.getElementById('iptvLinkInput');
-            
-            if (hlsInput) hlsInput.value = hlsLink;
-            if (iptvInput) iptvInput.value = iptvLink;
-        }
-
-        function copyLink(elementId) {
-            const input = document.getElementById(elementId);
-            if (!input) return;
-            
-            input.select();
-            document.execCommand('copy');
-            
-            const btn = input.nextElementSibling;
-            const originalText = btn.textContent;
-            btn.textContent = 'COPIED!';
-            setTimeout(() => btn.textContent = originalText, 2000);
-        }
-//${host}/live/${username}/stream.m3u8`;
-            
-            if (streamLinkInput) {
-                streamLinkInput.value = link;
-            }
-        
-
-        // Handle Enter key in modal
-        usernameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                saveUsername();
-            }
-        });
-
-        // Initial check
-        checkUsername();
     </script>
-
-    <!-- Username Modal -->
-    <div class="modal-overlay" id="usernameModal">
-        <div class="modal-box">
-            <div class="modal-title">Welcome to SinLive</div>
-            <div class="modal-desc">Please enter a username to generate your unique stream link.</div>
-            <input type="text" class="modal-input" id="usernameInput" placeholder="Enter username (e.g. ahmet)" autocomplete="off">
-            <button class="modal-btn" onclick="saveUsername()">Start Dashboard</button>
-        </div>
-    </div>
-
 </body>
 
 </html>

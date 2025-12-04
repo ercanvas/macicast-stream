@@ -43,6 +43,11 @@ class StateManager:
         
         # Program Name
         self._program_name = ""
+        
+        # Auto Mode
+        self._auto_mode_enabled = config.AUTO_MODE_ENABLED
+        self._current_hashtag = config.TIKTOK_HASHTAGS[0] if config.TIKTOK_HASHTAGS else "trending"
+
 
     def set_program_name(self, name: str):
         with self._lock:
@@ -51,6 +56,25 @@ class StateManager:
     def get_program_name(self) -> str:
         with self._lock:
             return self._program_name
+
+    # --- Auto Mode State ---
+
+    def set_auto_mode(self, enabled: bool):
+        with self._lock:
+            self._auto_mode_enabled = enabled
+            
+    def is_auto_mode(self) -> bool:
+        with self._lock:
+            return self._auto_mode_enabled
+            
+    def set_current_hashtag(self, hashtag: str):
+        with self._lock:
+            self._current_hashtag = hashtag
+            
+    def get_current_hashtag(self) -> str:
+        with self._lock:
+            return self._current_hashtag
+
     
     # --- Broadcasting State ---
     
@@ -178,7 +202,10 @@ class StateManager:
                 'queue': self._playlist_queue.copy(),
                 'current_playback': playback,
                 'statistics': stats,
-                'program_name': self._program_name
+                'statistics': stats,
+                'program_name': self._program_name,
+                'auto_mode_enabled': self._auto_mode_enabled,
+                'current_hashtag': self._current_hashtag
             }
 
 
