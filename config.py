@@ -15,7 +15,7 @@ SEGMENT_METADATA_FILE = os.path.join(HLS_DIR, 'segments_metadata.json')
 IDLE_SOURCE_PATH = os.path.join(BASE_DIR, 'idle.mp4')
 
 # *** CRITICAL: Set your absolute FFmpeg path here ***
-FFMPEG_PATH = r"C:\Users\unall\AppData\Local\Microsoft\WinGet\Links\ffmpeg.exe"
+FFMPEG_PATH = "ffmpeg"
 
 # --- Segment Management Configuration ---
 # Maximum number of segments to keep in active directory (older ones moved to trash)
