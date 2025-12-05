@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: macicast-stream
+    env: python
+    region: frankfurt  # or your preferred region
+    plan: free  # or starter/standard
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
