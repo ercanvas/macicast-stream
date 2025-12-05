@@ -114,7 +114,8 @@ def start_ffmpeg(source, source_type):
     program_name = state_manager.get_program_name()
     final_output_label = "[out]"
     
-    if config.PROGRAM_NAME_ENABLED and program_name:
+    if config.PROGRAM_NAME_ENABLED and program_name and os.path.exists(config.FONT_PATH):
+        # Only add text overlay if font file exists
         # Escape special characters for FFmpeg
         safe_program_name = program_name.replace(":", "\\:").replace("'", "'\\\\''")
         
@@ -132,6 +133,8 @@ def start_ffmpeg(source, source_type):
         else:
             # Apply directly to input: [0:v] -> drawtext -> [out]
             overlay_filter = f"[0:v]{drawtext_filter}{final_output_label}"
+    elif config.PROGRAM_NAME_ENABLED and program_name and not os.path.exists(config.FONT_PATH):
+        print(f"Warning: Font file not found at {config.FONT_PATH}, skipping program name overlay")
     
     # Output Options (HLS) - Optimized for CPU usage
     cmd.extend([
@@ -307,17 +310,18 @@ def stream_manager_loop():
         elif state_manager.is_auto_mode():
             # Auto Mode: Fetch from YouTube
             hashtag = state_manager.get_current_hashtag()
-            print(f"Auto Mode: Fetching video for '{hashtag}'...")
+            print(f"[AUTO MODE] Fetching video for hashtag: '{hashtag}'...")
             
             url, title = content_provider.get_random_video(hashtag)
             
             if url:
-                print(f"Auto Mode: Starting {title}")
+                print(f"[AUTO MODE] Starting video: {title}")
+                print(f"[AUTO MODE] Stream URL: {url[:100]}...")  # Print first 100 chars
                 # Update program name to video title
                 state_manager.set_program_name(title)
                 start_ffmpeg(url, 'URL')
             else:
-                print("Auto Mode: Failed to fetch video, falling back to IDLE momentarily...")
+                print("[AUTO MODE] Failed to fetch video, falling back to IDLE...")
                 start_ffmpeg(config.IDLE_SOURCE_PATH, 'IDLE')
                 # Sleep a bit longer to avoid rapid retry loops if API is down
                 time.sleep(5)

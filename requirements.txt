@@ -1,6 +1,5 @@
 Flask
-flask-cors
+Flask-Cors
 psutil
 Pillow
-
 yt-dlp

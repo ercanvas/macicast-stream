@@ -45,7 +45,7 @@ class ContentProvider:
         print(f"Searching YouTube for: {search_term}...")
 
         # Use YouTube search which is much more reliable with yt-dlp
-        # ytsearch5: means "search YouTube and get 5 results"
+        # ytsearch10: means "search YouTube and get 10 results"
         
         try:
             # Get top 10 search results from YouTube
@@ -68,11 +68,12 @@ class ContentProvider:
                     search_query
                 ]
             
-            # Run command
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')
+            # Run command with timeout
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', timeout=30)
             
             if result.returncode != 0:
-                print(f"yt-dlp search failed: {result.stderr}")
+                print(f"❌ yt-dlp search failed with return code {result.returncode}")
+                print(f"   Error: {result.stderr[:500]}")  # Print first 500 chars of error
                 return None, None
 
             videos = []
@@ -85,10 +86,11 @@ class ContentProvider:
                         pass
             
             if not videos:
-                print("No videos found.")
+                print("❌ No videos found in search results")
                 return None, None
 
             # Pick a random video
+            print(f"✓ Found {len(videos)} videos, selecting random one...")
             selected = random.choice(videos)
             video_url = selected.get('url')
             if not video_url:
@@ -97,13 +99,14 @@ class ContentProvider:
                 if video_id:
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
                 else:
+                    print("❌ Could not extract video URL or ID")
                     return None, None
             
             title = selected.get('title', 'YouTube Video')
             
             # Now resolve the direct stream URL for this video
             # Request a format that has both video and audio combined
-            print(f"Resolving stream for: {title}")
+            print(f"✓ Resolving stream for: {title}")
             
             # Use format selection to get a stream with both video and audio
             # 'best' gives us the best quality with audio+video combined
@@ -121,10 +124,11 @@ class ContentProvider:
                     video_url
                 ]
             
-            result_resolve = subprocess.run(cmd_resolve, capture_output=True, text=True, encoding='utf-8')
+            result_resolve = subprocess.run(cmd_resolve, capture_output=True, text=True, encoding='utf-8', timeout=30)
             
             if result_resolve.returncode != 0:
-                print(f"Failed to resolve stream: {result_resolve.stderr}")
+                print(f"❌ Failed to resolve stream with return code {result_resolve.returncode}")
+                print(f"   Error: {result_resolve.stderr[:500]}")
                 return None, None
                 
             stream_url = result_resolve.stdout.strip()
@@ -132,8 +136,12 @@ class ContentProvider:
             # Take the first URL (should be a combined stream now)
             stream_url = stream_url.split('\n')[0]
             
+            print(f"✓ Successfully resolved stream URL (length: {len(stream_url)} chars)")
             return stream_url, title
 
+        except subprocess.TimeoutExpired:
+            print("❌ yt-dlp command timed out after 30 seconds")
+            return None, None
         except Exception as e:
-            print(f"Error fetching YouTube video: {e}")
+            print(f"❌ Error fetching YouTube video: {type(e).__name__}: {str(e)}")
             return None, None
