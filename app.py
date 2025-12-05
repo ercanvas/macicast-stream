@@ -51,7 +51,7 @@ def get_video_duration(file_path):
     """Get video duration using ffprobe"""
     try:
         cmd = [
-            config.FFMPEG_PATH.replace('ffmpeg.exe', 'ffprobe.exe'),
+            config.FFMPEG_PATH.replace('ffmpeg', 'ffprobe'),
             '-v', 'error',
             '-show_entries', 'format=duration',
             '-of', 'default=noprint_wrappers=1:nokey=1',
@@ -157,18 +157,20 @@ def start_ffmpeg(source, source_type):
         config.HLS_PLAYLIST
     ])
 
-    # Windows: Hide console window
-    creation_flags = 0
+    # Start process (Windows-specific flags for hiding console window)
     if os.name == 'nt':
-        creation_flags = subprocess.CREATE_NO_WINDOW
-
-    # Start process
-    process = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE if config.VERBOSE_FFMPEG_LOGGING else subprocess.DEVNULL,
-        creationflags=creation_flags
-    )
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE if config.VERBOSE_FFMPEG_LOGGING else subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+    else:
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE if config.VERBOSE_FFMPEG_LOGGING else subprocess.DEVNULL
+        )
     
     state_manager.set_current_process(process)
     

@@ -110,7 +110,7 @@ STREAM_HEIGHT = 720
 
 # --- Program Name Overlay ---
 PROGRAM_NAME_ENABLED = True
-FONT_PATH = "arial.ttf"  # FFmpeg usually finds this on Windows, or provide full path C:/Windows/Fonts/arial.ttf
+FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"  # Linux-compatible font for Render.com
 FONT_SIZE = 24
 FONT_COLOR = "white"
 BOX_COLOR = "black@0.0"
