@@ -449,10 +449,11 @@ def user_stream_playlist_m3u(username):
     """Serve a Master Playlist (M3U) for IPTV players"""
     host = request.host_url.rstrip('/')
     stream_url = f"{host}/live/{username}/stream.m3u8"
+    logo_url = "https://seeklogo.com/images/T/tv-logo-F7231DA292-seeklogo.com.png"
     
-    # Simple M3U content
+    # M3U content with logo
     content = f"""#EXTM3U
-#EXTINF:-1 tvg-id="sinlive" tvg-name="SinLive" group-title="Live",SinLive Stream
+#EXTINF:-1 tvg-id="sinlive" tvg-name="SinLive" tvg-logo="{logo_url}" group-title="Live",SinLive Stream
 {stream_url}"""
 
     return Response(content, mimetype='text/plain')
