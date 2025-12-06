@@ -657,6 +657,7 @@ def cleanup_on_startup():
     Perform cleanup on application startup:
     1. Delete all files in static/hls EXCEPT stream.m3u8
     2. Delete all files in overlays directory
+    3. Create placeholder stream.m3u8 if it doesn't exist
     """
     print("Performing startup cleanup...")
     
@@ -688,6 +689,22 @@ def cleanup_on_startup():
                     print(f"Deleted overlay: {filename}")
             except Exception as e:
                 print(f"Failed to delete {file_path}. Reason: {e}")
+    
+    # 3. Create placeholder stream.m3u8 if it doesn't exist
+    # This prevents 404 errors when clients try to access the stream before FFmpeg starts
+    if not os.path.exists(config.HLS_PLAYLIST):
+        print(f"Creating placeholder HLS playlist: {config.HLS_PLAYLIST}")
+        try:
+            placeholder_content = """#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:2
+#EXT-X-MEDIA-SEQUENCE:0
+"""
+            with open(config.HLS_PLAYLIST, 'w') as f:
+                f.write(placeholder_content)
+            print("Placeholder stream.m3u8 created successfully")
+        except Exception as e:
+            print(f"Failed to create placeholder stream.m3u8. Reason: {e}")
 
 atexit.register(cleanup)
 
